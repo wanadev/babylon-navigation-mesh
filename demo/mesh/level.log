@@ -1,0 +1,33 @@
+	Babylon.js Exporter version: 1.8.2, Blender version: 2.75 (sub 0)
+========= Conversion from Blender to Babylon.js =========
+	Python World class constructor completed
+	processing begun of material:  level.Default
+	processing begun of material:  level.Material
+	WARNING texture type not currently supported:  NONE, ignored.
+	processing begun of mesh:  Navmesh
+		WARNING:  No materials have been assigned: 
+		num positions      :  405
+		num normals        :  405
+		num uvs            :  0
+		num uvs2           :  0
+		num colors         :  0
+		num indices        :  1293
+	processing begun of mesh:  Cube.001
+		num positions      :  884
+		num normals        :  884
+		num uvs            :  1768
+		num uvs2           :  0
+		num colors         :  0
+		num indices        :  4836
+	processing begun of mesh:  Cube
+		num positions      :  8
+		num normals        :  8
+		num uvs            :  0
+		num uvs2           :  0
+		num colors         :  0
+		num indices        :  36
+	processing begun of camera (FreeCamera):  Camera
+	processing begun of light (POINT):  Lamp
+========= Writing of scene file started =========
+========= Writing of scene file completed =========
+========= end of processing =========
