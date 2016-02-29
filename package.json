@@ -6,10 +6,25 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
-    "type": "git"
+    "type": "git",
+    "url": "git+ssh://git@github.com/wanadev/babylon-navigation-mesh.git"
   },
-  "author": "Wanadev",
+  "author": {
+    "name": "Wanadev",
+    "url": "http://wanadev.fr/"
+  },
+  "maintainers": [
+    {
+      "name": "clementlvsr",
+      "email": "clevasseur@wanadev.fr"
+    },
+    {
+      "name": "wanadev",
+      "email": "it@wanadev.fr"
+    }
+  ],
   "license": "MIT",
+  "main": "./build/Navigation.js",
   "devDependencies": {
     "grunt": "^0.4.5",
     "grunt-browserify": "^4.0.0",
@@ -28,5 +43,13 @@
     "grunt-contrib-uglify": "^0.11.1",
     "grunt-jscs": "^2.7.0",
     "underscore": "^1.8.3"
-  }
+  },
+  "bugs": {
+    "url": "https://github.com/wanadev/babylon-navigation-mesh/issues"
+  },
+  "gitHead": "7c63b5e12cb29e178cdf7a0d1ee46523541e3882",
+  "readme": "ERROR: No README data found!",
+  "_id": "babylon-navigation-mesh@1.0.0",
+  "_shasum": "80708436afe7a073b405e2bb41528e301664ff3a",
+  "_from": "babylon-navigation-mesh@*"
 }
