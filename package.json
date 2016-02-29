@@ -1,5 +1,5 @@
 {
-  "name": "Navigation",
+  "name": "babylon-navigation-mesh",
   "version": "1.0.0",
   "description": "A toolkit to move on navigation mesh with BABYLONJS",
   "scripts": {
@@ -10,7 +10,6 @@
   },
   "author": "Wanadev",
   "license": "MIT",
-  "private": true,
   "devDependencies": {
     "grunt": "^0.4.5",
     "grunt-browserify": "^4.0.0",
