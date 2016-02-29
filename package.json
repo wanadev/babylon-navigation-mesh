@@ -1,6 +1,6 @@
 {
   "name": "babylon-navigation-mesh",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A toolkit to move on navigation mesh with BABYLONJS",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
