@@ -24,7 +24,7 @@
     }
   ],
   "license": "MIT",
-  "main": "./build/babylon-navigation-mesh.js",
+  "main": "./src/Navigation.js",
   "devDependencies": {
     "grunt": "^0.4.5",
     "grunt-browserify": "^4.0.0",
