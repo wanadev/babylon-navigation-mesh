@@ -2,6 +2,8 @@
 
 [![NPM version](https://badge.fury.io/js/babylon-navigation-mesh.png)](http://badge.fury.io/js/babylon-navigation-mesh)
 
+[Demo](http://wanadev.github.io/babylon-navigation-mesh/)
+
 A toolkit to navigate on a mesh with BABYLON.js. Largely inspired by [PatrolJS](https://github.com/nickjanssen/PatrolJS) for ThreeJS.
 
 Babylon-navigation-mesh is a path finder for AI agents. It use the A star and  Funnel algorithms to calculate a path on a navigation mesh.
