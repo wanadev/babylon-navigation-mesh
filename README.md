@@ -3,7 +3,7 @@ Babylon-navigation-mesh
 =======
 A toolkit to navigate on a mesh with BABYLON.js. Largely inspired by [PatrolJS](https://github.com/nickjanssen/PatrolJS) for ThreeJS.
 
-Babylon-navigation-mesh is a path finder for AI agents. It use the A star algorithm and  Funnel algorithms to calculate a path on a navigation mesh.
+Babylon-navigation-mesh is a path finder for AI agents. It use the A star and  Funnel algorithms to calculate a path on a navigation mesh.
 
 ##Usage##
 
@@ -38,4 +38,8 @@ And to project a position on the navmesh:
 	var newPosition = navigation.projectOnNavmesh(this.position, 'scene', navigation.getGroup('level', this.position));
 
 Article in progress
+
+##Demo##
+
+![](https://github.com/wanadev/babylon-navigation-mesh/blob/master/demo/demo.gif?raw=true)
 
