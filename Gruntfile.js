@@ -26,20 +26,6 @@ module.exports = function(grunt) {
             }
         },
 
-        jshint: {
-            all: ['src/*.js'],
-            options: {
-                jshintrc: true
-            }
-        },
-
-        jscs: {
-            src: "src/*.js",
-            options: {
-                config: ".jscsrc"
-            }
-        },
-
 		watch: {
 			js: {
 				files: ['src/*.js'],
@@ -48,9 +34,6 @@ module.exports = function(grunt) {
                     spawn: false
                 }
 			}
-		},
-
-		concat: {
 		},
 
         clean: {
@@ -63,9 +46,7 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-clean');
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-browserify');
-    grunt.loadNpmTasks('grunt-contrib-jshint');
     grunt.loadNpmTasks('grunt-contrib-watch');
-    grunt.loadNpmTasks("grunt-jscs");	
 
 	grunt.registerTask('default', ['browserify', 'uglify']);
 

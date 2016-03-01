@@ -1,5 +1,5 @@
 var Class = require("abitbol");
-var _ = require("underscore");
+var _ = require("lodash");
 var Astar = require("./Astar.js");
 var Channel = require("./Channel.js");
 
@@ -178,7 +178,7 @@ var Navigation = Class.$extend({
 				farthestNode = node;
 				distance = measuredDistance;
 			}
-		}, this);
+		}.bind(this));
 
 		// If we can't find any node, just go straight to the target
 		if (!closestNode || !farthestNode) {
@@ -267,7 +267,7 @@ var Navigation = Class.$extend({
 			lowestPoint = Math.min(point.y, lowestPoint);
 			highestPoint = Math.max(point.y, highestPoint);
 			polygonVertices.push(point);
-		}, this);
+		}.bind(this));
 
 		if (vector.y < highestPoint + 0.5 && vector.y > lowestPoint - 0.5 &&
 			this._isPointInPoly(polygonVertices, vector)) {
@@ -312,7 +312,7 @@ var Navigation = Class.$extend({
 		var sharedVertices = [];
 
 		aList.forEach(function (vId) {
-			if (_.contains(bList, vId)) {
+			if (_.includes(bList, vId)) {
 				sharedVertices.push(vId);
 			}
 		});
@@ -321,12 +321,12 @@ var Navigation = Class.$extend({
 
 		// console.log("TRYING aList:", aList, ", bList:", bList, ", sharedVertices:", sharedVertices);
 
-		if (_.contains(sharedVertices, aList[0]) && _.contains(sharedVertices, aList[aList.length - 1])) {
+		if (_.includes(sharedVertices, aList[0]) && _.includes(sharedVertices, aList[aList.length - 1])) {
 			// Vertices on both edges are bad, so shift them once to the left
 			aList.push(aList.shift());
 		}
 
-		if (_.contains(sharedVertices, bList[0]) && _.contains(sharedVertices, bList[bList.length - 1])) {
+		if (_.includes(sharedVertices, bList[0]) && _.includes(sharedVertices, bList[bList.length - 1])) {
 			// Vertices on both edges are bad, so shift them once to the left
 			bList.push(bList.shift());
 		}
@@ -335,7 +335,7 @@ var Navigation = Class.$extend({
 		sharedVertices = [];
 
 		aList.forEach(function (vId) {
-			if (_.contains(bList, vId)) {
+			if (_.includes(bList, vId)) {
 				sharedVertices.push(vId);
 			}
 		});
@@ -438,7 +438,7 @@ var Navigation = Class.$extend({
 				// Remove the neighbours who had this vertex
 				var goodNeighbours = [];
 				polygon.neighbours.forEach(function (neighbour) {
-					if (!_.contains(neighbour.vertexIds, polygon.vertexIds[i])) {
+					if (!_.includes(neighbour.vertexIds, polygon.vertexIds[i])) {
 						goodNeighbours.push(neighbour);
 					}
 				});
@@ -654,7 +654,7 @@ var Navigation = Class.$extend({
 		// Build a list of adjacent polygons
 		_.each(polygons, function (polygon) {
 			this._buildPolygonNeighbours(polygon, navigationMesh);
-		}, this);
+		}.bind(this));
 
 		return navigationMesh;
 	},
@@ -745,7 +745,7 @@ var Navigation = Class.$extend({
 						}
 
 					}
-				}, this);
+				}.bind(this));
 			}
 
 
@@ -758,7 +758,7 @@ var Navigation = Class.$extend({
 		var isUsed = function (vId) {
 			var contains = false;
 			_.each(newPolygons, function (p) {
-				if (!contains && _.contains(p.vertexIds, vId)) {
+				if (!contains && _.includes(p.vertexIds, vId)) {
 					contains = true;
 				}
 			});
@@ -905,7 +905,7 @@ var Navigation = Class.$extend({
 		var sharedVertices = [];
 
 		_.each(aList, function (vId) {
-			if (_.contains(bList, vId)) {
+			if (_.includes(bList, vId)) {
 				sharedVertices.push(vId);
 			}
 		});
@@ -914,12 +914,12 @@ var Navigation = Class.$extend({
 
 		// console.log("TRYING aList:", aList, ", bList:", bList, ", sharedVertices:", sharedVertices);
 
-		if (_.contains(sharedVertices, aList[0]) && _.contains(sharedVertices, aList[aList.length - 1])) {
+		if (_.includes(sharedVertices, aList[0]) && _.includes(sharedVertices, aList[aList.length - 1])) {
 			// Vertices on both edges are bad, so shift them once to the left
 			aList.push(aList.shift());
 		}
 
-		if (_.contains(sharedVertices, bList[0]) && _.contains(sharedVertices, bList[bList.length - 1])) {
+		if (_.includes(sharedVertices, bList[0]) && _.includes(sharedVertices, bList[bList.length - 1])) {
 			// Vertices on both edges are bad, so shift them once to the left
 			bList.push(bList.shift());
 		}
@@ -928,7 +928,7 @@ var Navigation = Class.$extend({
 		sharedVertices = [];
 
 		_.each(aList, function (vId) {
-			if (_.contains(bList, vId)) {
+			if (_.includes(bList, vId)) {
 				sharedVertices.push(vId);
 			}
 		});
@@ -942,7 +942,7 @@ var Navigation = Class.$extend({
 
 		_.each(navigationMesh.vertices, function (v) {
 			v = this._roundNumber(v, 2);
-		}, this);
+		}.bind(this));
 
 		saveObj.vertices = navigationMesh.vertices;
 
@@ -973,7 +973,7 @@ var Navigation = Class.$extend({
 				var portals = [];
 				_.each(p.neighbours, function (n) {
 					portals.push(this._getSharedVerticesInOrder(p, n));
-				}, this);
+				}.bind(this));
 
 
 				p.centroid.x = this._roundNumber(p.centroid.x, 2);
@@ -988,10 +988,10 @@ var Navigation = Class.$extend({
 					portals: portals
 				});
 
-			}, this);
+			}.bind(this));
 
 			saveObj.groups.push(newGroup);
-		}, this);
+		}.bind(this));
 
 		return saveObj;
 	},
