@@ -40,6 +40,15 @@
   "bugs": {
     "url": "https://github.com/wanadev/babylon-navigation-mesh/issues"
   },
+  "keywords": [
+    "babylon.js",
+    "babylon",
+    "navigation",
+    "mesh",
+    "agent",
+    "AI",
+    "path finding"
+  ],
   "gitHead": "7c63b5e12cb29e178cdf7a0d1ee46523541e3882",
   "readme": "ERROR: No README data found!",
   "_id": "babylon-navigation-mesh@1.0.0",
