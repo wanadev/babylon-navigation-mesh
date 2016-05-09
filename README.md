@@ -45,7 +45,7 @@ And to project a position on the navmesh:
 var newPosition = navigation.projectOnNavmesh(this.position, 'scene', navigation.getGroup('level', this.position));
 ```
 
-Article in progress
+An article is available to create and use a navigation mesh [here](https://www.wanadev.fr/43-tuto-creer-et-utiliser-un-maillage-de-navigation-avec-babylon-js/) (french)
 
 ## Demo
 
