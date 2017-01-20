@@ -1,22 +1,24 @@
 module.exports = function(grunt) {
 
-	// Project configuration.
-	grunt.initConfig({
-		pkg: grunt.file.readJSON('package.json'),
+    var browserifyAlias = ["./node_modules/babylonjs/babylon.max.js:babylonjs"];
 
-		browserify: {
-			build: {
-				files: {
-					'build/<%= pkg.name %>.js': ['src/Navigation.js']
-				}
-			},
-			options: {
-				browserifyOptions: {
-					debug: true,
+    // Project configuration.
+    grunt.initConfig({
+        pkg: grunt.file.readJSON('package.json'),
+
+        browserify: {
+            build: {
+                files: {
+                    'build/<%= pkg.name %>.js': ['src/Navigation.js']
+                }
+            },
+            options: {
+                alias: browserifyAlias,
+                browserifyOptions: {
                     'standalone': 'Navigation'
-				}
-			}
-		},
+                }
+            }
+        },
 
         uglify: {
             build: {
@@ -26,21 +28,21 @@ module.exports = function(grunt) {
             }
         },
 
-		watch: {
-			js: {
-				files: ['src/*.js'],
+        watch: {
+            js: {
+                files: ['src/*.js'],
                 tasks: ['browserify'],
                 options: {
                     spawn: false
                 }
-			}
-		},
+            }
+        },
 
         clean: {
             dist: ['build']
         },
 
-	});
+    });
 
 
     grunt.loadNpmTasks('grunt-contrib-clean');
@@ -48,6 +50,6 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-browserify');
     grunt.loadNpmTasks('grunt-contrib-watch');
 
-	grunt.registerTask('default', ['browserify', 'uglify']);
+    grunt.registerTask('default', ['browserify', 'uglify']);
 
 };

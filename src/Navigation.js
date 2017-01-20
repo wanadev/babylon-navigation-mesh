@@ -1,7 +1,11 @@
+"use strict";
+
 var Class = require("abitbol");
 var _ = require("lodash");
 var Astar = require("./Astar.js");
 var Channel = require("./Channel.js");
+
+var BABYLON = require("babylonjs");
 
 /**
  * This component generates screenshots of 3D models, in order to preview them when they are rendered.
@@ -11,990 +15,983 @@ var Channel = require("./Channel.js");
  */
 
 var Navigation = Class.$extend({
-    __init__: function() {
-        this.zoneNodes = {};
-        this.astar = new Astar();
-    },
- 
-	buildNodes: function (mesh) {
-		var navigationMesh = this._buildNavigationMesh(mesh.geometry);
-
-		var zoneNodes = this._groupNavMesh(navigationMesh);
-
-		return zoneNodes;
-	},
-
-	setZoneData: function (zone, data) {
-		this.zoneNodes[zone] = data;
-	},
-
-	getGroup: function (zone, position) {
-
-		if (!this.zoneNodes[zone]) return null;
-
-		var closestNodeGroup = null;
-
-		var distance = Infinity;
-
-		_.each(this.zoneNodes[zone].groups, function (group, index) {
-			_.each(group, function (node) {
-				var measuredDistance = BABYLON.Vector3.DistanceSquared(node.centroid, position);
-				if (measuredDistance < distance) {
-					closestNodeGroup = index;
-					distance = measuredDistance;
-				}
-			});
-		});
-
-		return closestNodeGroup;
-	},
-
-	getRandomNode: function (zone, group, nearPosition, nearRange) {
-
-		if (!this.zoneNodes[zone]) return new BABYLON.Vector3();
-
-		nearPosition = nearPosition || null;
-		nearRange = nearRange || 0;
-
-		var candidates = [];
-
-		var polygons = this.zoneNodes[zone].groups[group];
+  __init__: function() {
+    this.zoneNodes = {};
+    this.astar = new Astar();
+  },
 
-		_.each(polygons, function (p) {
-			if (nearPosition && nearRange) {
-				if (BABYLON.Vector3.DistanceSquared(nearPosition, p.centroid) < nearRange * nearRange) {
-					candidates.push(p.centroid);
-				}
-			} else {
-				candidates.push(p.centroid);
-			}
-		});
-
-		return _.sample(candidates) || new BABYLON.Vector3();
-	},
-
-	projectOnNavmesh: function (position, zone, group) {
-		var allNodes = this.zoneNodes[zone].groups[group];
-		var vertices = this.zoneNodes[zone].vertices;
-
-		var closestNode = null;
-		var distance = Infinity;
-		var finalProj = null, proj = null;
-
-		for (var i = 0; i < allNodes.length; i++) {
-			var node = allNodes[i];
-
-			var proj = this._getProjectionOnNode(position, node, vertices);
-			var measuredDistance = BABYLON.Vector3.DistanceSquared(proj, position);
-
-			if (measuredDistance < distance) {
-				distance = measuredDistance;
-				//this.meshes[3].position.copyFrom(proj);
-				finalProj = proj;
-				closestNode = node;
-			}
-
-		}
-
-		return finalProj;
-	},
-
-	_getProjectionOnNode: function(position, node, vertices) {
-
-		var A = this.getVectorFrom(vertices, node.vertexIds[0]);
-		var B = this.getVectorFrom(vertices, node.vertexIds[1]);
-		var C = this.getVectorFrom(vertices, node.vertexIds[2]);
-		var u = B.subtract(A);
-	    var v = C.subtract(A);
-	    var n = BABYLON.Vector3.Cross(u, v).normalize();
-	    
-	    var plane = {
-	    	normal: n,
-	    	d: -A.dot(n)
-	    };
-	    var p = position.projectOnPlane(plane);
-		// Compute barycentric coordinates (u, v, w) for
-		// point p with respect to triangle (a, b, c)
-		var barycentric = function(p, a, b, c) {
-			var ret = {};
-
-		    var v0 = c.subtract(a), 
-		    	v1 = b.subtract(a),
-		    	v2 = p.subtract(a);
+  buildNodes: function(mesh) {
+    var navigationMesh = this._buildNavigationMesh(mesh.geometry);
 
-		    var d00 = v0.dot(v0);
-		    var d01 = v0.dot(v1);
-		    var d02 = v0.dot(v2);
-		    var d11 = v1.dot(v1);
-		    var d12 = v1.dot(v2);
-		    var denom = d00 * d11 - d01 * d01;
-		    ret.u = (d11 * d02 - d01 * d12) / denom;
-		    ret.v = (d00 * d12 - d01 * d02) / denom;
-		    ret.w = 1 - ret.u - ret.v;
+    var zoneNodes = this._groupNavMesh(navigationMesh);
+
+    return zoneNodes;
+  },
 
-		    return ret;
-		}
+  setZoneData: function(zone, data) {
+    this.zoneNodes[zone] = data;
+  },
 
-		var bary = barycentric(p, A, B, C);
+  getGroup: function(zone, position) {
+
+    if (!this.zoneNodes[zone]) {
+      return null;
+    }
+
+    var closestNodeGroup = null;
+
+    var distance = Infinity;
+
+    _.each(this.zoneNodes[zone].groups, function(group, index) {
+      _.each(group, function(node) {
+        var measuredDistance = BABYLON.Vector3.DistanceSquared(node.centroid, position);
+        if (measuredDistance < distance) {
+          closestNodeGroup = index;
+          distance = measuredDistance;
+        }
+      });
+    });
+
+    return closestNodeGroup;
+  },
+
+  getRandomNode: function(zone, group, nearPosition, nearRange) {
+
+    if (!this.zoneNodes[zone]) return new BABYLON.Vector3();
+
+    nearPosition = nearPosition || null;
+    nearRange = nearRange || 0;
+
+    var candidates = [];
 
-		bary.u = Math.min(Math.max(bary.u, 0), 1);
-		bary.v = Math.min(Math.max(bary.v, 0), 1);
+    var polygons = this.zoneNodes[zone].groups[group];
 
-		if (bary.u + bary.v >= 1) {
-			var sum = bary.u + bary.v;
-			bary.u /= sum;
-			bary.v /= sum;
-		}
+    _.each(polygons, function(p) {
+      if (nearPosition && nearRange) {
+        if (BABYLON.Vector3.DistanceSquared(nearPosition, p.centroid) < nearRange * nearRange) {
+          candidates.push(p.centroid);
+        }
+      } else {
+        candidates.push(p.centroid);
+      }
+    });
+
+    return _.sample(candidates) || new BABYLON.Vector3();
+  },
 
-		var proj = A.add(B.subtract(A).scale(bary.v).add(C.subtract(A).scale(bary.u)));
+  projectOnNavmesh: function(position, zone, group) {
+    var allNodes = this.zoneNodes[zone].groups[group];
+    var vertices = this.zoneNodes[zone].vertices;
 
-		return proj;
-	},
+    var closestNode = null;
+    var distance = Infinity;
+    var finalProj = null,
+      proj = null,
+      node = null,
+      measuredDistance = 0;
+
+    for (var i = 0; i < allNodes.length; i++) {
+      node = allNodes[i];
+
+      proj = this._getProjectionOnNode(position, node, vertices);
+      measuredDistance = BABYLON.Vector3.DistanceSquared(proj, position);
+
+      if (measuredDistance < distance) {
+        distance = measuredDistance;
+        //this.meshes[3].position.copyFrom(proj);
+        finalProj = proj;
+        closestNode = node;
+      }
+
+    }
+
+    return finalProj;
+  },
+
+  _getProjectionOnNode: function(position, node, vertices) {
+
+    var A = this.getVectorFrom(vertices, node.vertexIds[0]);
+    var B = this.getVectorFrom(vertices, node.vertexIds[1]);
+    var C = this.getVectorFrom(vertices, node.vertexIds[2]);
+    var u = B.subtract(A);
+    var v = C.subtract(A);
+    var n = BABYLON.Vector3.Cross(u, v).normalize();
+
+    var plane = {
+      normal: n,
+      d: -BABYLON.Vector3.Dot(A, n)
+    };
+    var p = position.projectOnPlane(plane);
+    // Compute barycentric coordinates (u, v, w) for
+    // point p with respect to triangle (a, b, c)
+    var barycentric = function(p, a, b, c) {
+      var ret = {};
+
+      var v0 = c.subtract(a),
+        v1 = b.subtract(a),
+        v2 = p.subtract(a);
 
-	findPath: function (startPosition, targetPosition, zone, group) {
+      var d00 = BABYLON.Vector3.Dot(v0, v0);
+      var d01 = BABYLON.Vector3.Dot(v0, v1);
+      var d02 = BABYLON.Vector3.Dot(v0, v2);
+      var d11 = BABYLON.Vector3.Dot(v1, v1);
+      var d12 = BABYLON.Vector3.Dot(v1, v2);
+      var denom = d00 * d11 - d01 * d01;
+      ret.u = (d11 * d02 - d01 * d12) / denom;
+      ret.v = (d00 * d12 - d01 * d02) / denom;
+      ret.w = 1 - ret.u - ret.v;
 
-		var allNodes = this.zoneNodes[zone].groups[group];
-		var vertices = this.zoneNodes[zone].vertices;
+      return ret;
+    };
 
-		var closestNode = null;
-		var distance = Infinity;
+    var bary = barycentric(p, A, B, C);
 
-		allNodes.forEach(function (node) {
-			var measuredDistance = BABYLON.Vector3.DistanceSquared(node.centroid, startPosition);
-			if (measuredDistance < distance) {
-				closestNode = node;
-				distance = measuredDistance;
-			}
-		});
+    bary.u = Math.min(Math.max(bary.u, 0), 1);
+    bary.v = Math.min(Math.max(bary.v, 0), 1);
 
+    if (bary.u + bary.v >= 1) {
+      var sum = bary.u + bary.v;
+      bary.u /= sum;
+      bary.v /= sum;
+    }
 
-		var farthestNode = null;
-		distance = Infinity;
+    var proj = A.add(B.subtract(A).scale(bary.v).add(C.subtract(A).scale(bary.u)));
 
-		allNodes.forEach(function (node) {
-			var measuredDistance = BABYLON.Vector3.DistanceSquared(node.centroid, targetPosition);
-			if (measuredDistance < distance &&
-				this._isVectorInPolygon(targetPosition, node, vertices)) {
-				farthestNode = node;
-				distance = measuredDistance;
-			}
-		}.bind(this));
+    return proj;
+  },
 
-		// If we can't find any node, just go straight to the target
-		if (!closestNode || !farthestNode) {
-			return null;
-		}
+  findPath: function(startPosition, targetPosition, zone, group) {
 
-		var paths = this.astar.search(allNodes, closestNode, farthestNode);
+    var allNodes = this.zoneNodes[zone].groups[group];
+    var vertices = this.zoneNodes[zone].vertices;
 
-		var getPortalFromTo = function (a, b) {
-			for (var i = 0; i < a.neighbours.length; i++) {
-				if (a.neighbours[i] === b.id) {
-					return a.portals[i];
-				}
-			}
-		};
+    var closestNode = null;
+    var distance = Infinity;
 
-		// We got the corridor
-		// Now pull the rope
+    allNodes.forEach(function(node) {
+      var measuredDistance = BABYLON.Vector3.DistanceSquared(node.centroid, startPosition);
+      if (measuredDistance < distance) {
+        closestNode = node;
+        distance = measuredDistance;
+      }
+    });
 
-		var channel = new Channel();
 
-		channel.push(startPosition);
+    var farthestNode = null;
+    distance = Infinity;
 
-		for (var i = 0; i < paths.length; i++) {
-			var polygon = paths[i];
+    allNodes.forEach(function(node) {
+      var measuredDistance = BABYLON.Vector3.DistanceSquared(node.centroid, targetPosition);
+      if (measuredDistance < distance &&
+        this._isVectorInPolygon(targetPosition, node, vertices)) {
+        farthestNode = node;
+        distance = measuredDistance;
+      }
+    }.bind(this));
 
-			var nextPolygon = paths[i + 1];
+    // If we can't find any node, just go straight to the target
+    if (!closestNode || !farthestNode) {
+      return null;
+    }
 
-			if (nextPolygon) {
-				var portals = getPortalFromTo(polygon, nextPolygon);
-				channel.push(
-					this.getVectorFrom(vertices, portals[0]),
-					this.getVectorFrom(vertices, portals[1])
-				);
-			}
+    var paths = this.astar.search(allNodes, closestNode, farthestNode);
 
-		}
+    var getPortalFromTo = function(a, b) {
+      for (var i = 0; i < a.neighbours.length; i++) {
+        if (a.neighbours[i] === b.id) {
+          return a.portals[i];
+        }
+      }
+    };
 
-		channel.push(targetPosition);
+    // We got the corridor
+    // Now pull the rope
 
-		channel.stringPull();
+    var channel = new Channel();
 
+    channel.push(startPosition);
 
-		var vectors = [];
+    for (var i = 0; i < paths.length; i++) {
+      var polygon = paths[i];
 
-		channel.path.forEach(function (c) {
-			var vec = new BABYLON.Vector3(c.x, c.y, c.z);
+      var nextPolygon = paths[i + 1];
 
-			// console.log(vec.clone().sub(startPosition).length());
+      if (nextPolygon) {
+        var portals = getPortalFromTo(polygon, nextPolygon);
+        channel.push(
+          this.getVectorFrom(vertices, portals[0]),
+          this.getVectorFrom(vertices, portals[1])
+        );
+      }
 
-			// Ensure the intermediate steps aren't too close to the start position
-			// var dist = vec.clone().sub(startPosition).lengthSq();
-			// if (dist > 0.01 * 0.01) {
-				vectors.push(vec);
-			// }
+    }
 
+    channel.push(targetPosition);
 
-		});
+    channel.stringPull();
 
-		// We don't need the first one, as we already know our start position
-		vectors.shift();
 
-		return vectors;
-	},
+    var vectors = [];
 
-	_isPointInPoly: function (poly, pt) {
-		for (var c = false, i = -1, l = poly.length, j = l - 1; ++i < l; j = i)
-			((poly[i].z <= pt.z && pt.z < poly[j].z) || (poly[j].z <= pt.z && pt.z < poly[i].z)) && (pt.x < (poly[j].x - poly[i].x) * (pt.z - poly[i].z) / (poly[j].z - poly[i].z) + poly[i].x) && (c = !c);
-		return c;
-	},
+    channel.path.forEach(function(c) {
+      var vec = new BABYLON.Vector3(c.x, c.y, c.z);
 
-	_isVectorInPolygon: function (vector, polygon, vertices) {
+      // console.log(vec.clone().sub(startPosition).length());
 
-		// reference point will be the centroid of the polygon
-		// We need to rotate the vector as well as all the points which the polygon uses
+      // Ensure the intermediate steps aren't too close to the start position
+      // var dist = vec.clone().sub(startPosition).lengthSq();
+      // if (dist > 0.01 * 0.01) {
+      vectors.push(vec);
+      // }
 
-		var center = polygon.centroid;
 
-		var lowestPoint = 100000;
-		var highestPoint = -100000;
+    });
 
-		var polygonVertices = [];
+    // We don't need the first one, as we already know our start position
+    vectors.shift();
 
-		_.each(polygon.vertexIds, function (vId) {
-			var point = this.getVectorFrom(vertices, vId);
-			lowestPoint = Math.min(point.y, lowestPoint);
-			highestPoint = Math.max(point.y, highestPoint);
-			polygonVertices.push(point);
-		}.bind(this));
+    return vectors;
+  },
 
-		if (vector.y < highestPoint + 0.5 && vector.y > lowestPoint - 0.5 &&
-			this._isPointInPoly(polygonVertices, vector)) {
-			return true;
-		}
-		return false;
-	},
+  _isPointInPoly: function(poly, pt) {
+    for (var c = false, i = -1, l = poly.length, j = l - 1; ++i < l; j = i)
+      ((poly[i].z <= pt.z && pt.z < poly[j].z) || (poly[j].z <= pt.z && pt.z < poly[i].z)) && (pt.x < (poly[j].x - poly[i].x) * (pt.z - poly[i].z) / (poly[j].z - poly[i].z) + poly[i].x) && (c = !c);
+    return c;
+  },
 
-	_computeCentroids: function (geometry) {
-		var f, fl, face;
-		var centroids = [];
-		var indices = geometry.getIndices();
-		var vertices = geometry.getVerticesData(BABYLON.VertexBuffer.PositionKind);
-		var c = new BABYLON.Vector3(0, 0, 0);
+  _isVectorInPolygon: function(vector, polygon, vertices) {
 
-		for ( f = 0, fl = indices.length; f < fl; f += 3 ) {
-			var p1 = this.getVectorFrom(vertices, indices[f]);
-			var p2 = this.getVectorFrom(vertices, indices[f+1]);
-			var p3 = this.getVectorFrom(vertices, indices[f+2]);
+    // reference point will be the centroid of the polygon
+    // We need to rotate the vector as well as all the points which the polygon uses
+    var lowestPoint = 100000;
+    var highestPoint = -100000;
 
-			c.copyFromFloats( 0, 0, 0 );
+    var polygonVertices = [];
 
-			c.addInPlace(p1);
-			c.addInPlace(p2);
-			c.addInPlace(p3);
+    _.each(polygon.vertexIds, function(vId) {
+      var point = this.getVectorFrom(vertices, vId);
+      lowestPoint = Math.min(point.y, lowestPoint);
+      highestPoint = Math.max(point.y, highestPoint);
+      polygonVertices.push(point);
+    }.bind(this));
 
-			c.scaleInPlace( 1/3 );
+    if (vector.y < highestPoint + 0.5 && vector.y > lowestPoint - 0.5 &&
+      this._isPointInPoly(polygonVertices, vector)) {
+      return true;
+    }
+    return false;
+  },
 
-			centroids.push(c.clone());
-		}
-		geometry.centroids = centroids;
-	},
+  _computeCentroids: function(geometry) {
+    var centroids = [];
+    var indices = geometry.getIndices();
+    var vertices = geometry.getVerticesData(BABYLON.VertexBuffer.PositionKind);
+    var c = new BABYLON.Vector3(0, 0, 0);
 
+    for (var f = 0; f < indices.length; f += 3) {
+      var p1 = this.getVectorFrom(vertices, indices[f]);
+      var p2 = this.getVectorFrom(vertices, indices[f + 1]);
+      var p3 = this.getVectorFrom(vertices, indices[f + 2]);
 
-    _roundNumber: function (number, decimals) {
-        var newnumber = new Number(number + '').toFixed(parseInt(decimals));
-        return parseFloat(newnumber);
-    },
+      c.copyFromFloats(0, 0, 0);
 
-	_mergeVertexIds: function (aList, bList) {
+      c.addInPlace(p1);
+      c.addInPlace(p2);
+      c.addInPlace(p3);
 
-		var sharedVertices = [];
+      c.scaleInPlace(1 / 3);
 
-		aList.forEach(function (vId) {
-			if (_.includes(bList, vId)) {
-				sharedVertices.push(vId);
-			}
-		});
+      centroids.push(c.clone());
+    }
+    geometry.centroids = centroids;
+  },
 
-		if (sharedVertices.length < 2) return [];
 
-		// console.log("TRYING aList:", aList, ", bList:", bList, ", sharedVertices:", sharedVertices);
+  _roundNumber: function(number, decimals) {
+    var newnumber = new Number(number + '').toFixed(parseInt(decimals));
+    return parseFloat(newnumber);
+  },
 
-		if (_.includes(sharedVertices, aList[0]) && _.includes(sharedVertices, aList[aList.length - 1])) {
-			// Vertices on both edges are bad, so shift them once to the left
-			aList.push(aList.shift());
-		}
+  _mergeVertexIds: function(aList, bList) {
 
-		if (_.includes(sharedVertices, bList[0]) && _.includes(sharedVertices, bList[bList.length - 1])) {
-			// Vertices on both edges are bad, so shift them once to the left
-			bList.push(bList.shift());
-		}
+    var sharedVertices = [];
 
-		// Again!
-		sharedVertices = [];
+    aList.forEach(function(vId) {
+      if (_.includes(bList, vId)) {
+        sharedVertices.push(vId);
+      }
+    });
 
-		aList.forEach(function (vId) {
-			if (_.includes(bList, vId)) {
-				sharedVertices.push(vId);
-			}
-		});
+    if (sharedVertices.length < 2) return [];
 
-		var clockwiseMostSharedVertex = sharedVertices[1];
-		var counterClockwiseMostSharedVertex = sharedVertices[0];
+    // console.log("TRYING aList:", aList, ", bList:", bList, ", sharedVertices:", sharedVertices);
 
+    if (_.includes(sharedVertices, aList[0]) && _.includes(sharedVertices, aList[aList.length - 1])) {
+      // Vertices on both edges are bad, so shift them once to the left
+      aList.push(aList.shift());
+    }
 
-		var cList = _.clone(aList);
-		while (cList[0] !== clockwiseMostSharedVertex) {
-			cList.push(cList.shift());
-		}
+    if (_.includes(sharedVertices, bList[0]) && _.includes(sharedVertices, bList[bList.length - 1])) {
+      // Vertices on both edges are bad, so shift them once to the left
+      bList.push(bList.shift());
+    }
 
-		var c = 0;
+    // Again!
+    sharedVertices = [];
 
-		var temp = _.clone(bList);
-		while (temp[0] !== counterClockwiseMostSharedVertex) {
-			temp.push(temp.shift());
+    aList.forEach(function(vId) {
+      if (_.includes(bList, vId)) {
+        sharedVertices.push(vId);
+      }
+    });
 
-			if (c++ > 10) debugger;
-		}
+    var clockwiseMostSharedVertex = sharedVertices[1];
+    var counterClockwiseMostSharedVertex = sharedVertices[0];
 
-		// Shave
-		temp.shift();
-		temp.pop();
 
-		cList = cList.concat(temp);
+    var cList = _.clone(aList);
+    while (cList[0] !== clockwiseMostSharedVertex) {
+      cList.push(cList.shift());
+    }
 
-		// console.log("aList:", aList, ", bList:", bList, ", cList:", cList, ", sharedVertices:", sharedVertices);
+    var c = 0;
 
-		return cList;
-	},
+    var temp = _.clone(bList);
+    while (temp[0] !== counterClockwiseMostSharedVertex) {
+      temp.push(temp.shift());
 
-	_setPolygonCentroid: function (polygon, navigationMesh) {
-		var sum = new BABYLON.Vector3(0, 0, 0);
+      if (c++ > 10) break;
+    }
 
-		var vertices = navigationMesh.vertices;
+    // Shave
+    temp.shift();
+    temp.pop();
 
-		_.each(polygon.vertexIds, function (vId) {
-			sum.x += vertices[vId*3];
-			sum.y += vertices[vId*3+1];
-			sum.z += vertices[vId*3+2];
-		});
+    cList = cList.concat(temp);
 
-		sum.scaleInPlace(1/polygon.vertexIds.length);
+    // console.log("aList:", aList, ", bList:", bList, ", cList:", cList, ", sharedVertices:", sharedVertices);
 
-		polygon.centroid.copyFrom(sum);
-	},
+    return cList;
+  },
 
-	getVectorFrom: function (vertices, id, _vector) {
-		if (_vector) {
-			_vector.copyFromFloats(vertices[id*3], vertices[id*3+1], vertices[id*3+2]);
-			return _vector;
-		}
-		return new BABYLON.Vector3(vertices[id*3], vertices[id*3+1], vertices[id*3+2]);
-	},
+  _setPolygonCentroid: function(polygon, navigationMesh) {
+    var sum = new BABYLON.Vector3(0, 0, 0);
 
-	_cleanPolygon: function (polygon, navigationMesh) {
+    var vertices = navigationMesh.vertices;
 
-		var newVertexIds = [];
+    _.each(polygon.vertexIds, function(vId) {
+      sum.x += vertices[vId * 3];
+      sum.y += vertices[vId * 3 + 1];
+      sum.z += vertices[vId * 3 + 2];
+    });
 
-		var vertices = navigationMesh.vertices;
+    sum.scaleInPlace(1 / polygon.vertexIds.length);
 
-		for (var i = 0; i < polygon.vertexIds.length; i++) {
+    polygon.centroid.copyFrom(sum);
+  },
 
-			var vertex = this.getVectorFrom(vertices, polygon.vertexIds[i]);
+  getVectorFrom: function(vertices, id, _vector) {
+    if (_vector) {
+      _vector.copyFromFloats(vertices[id * 3], vertices[id * 3 + 1], vertices[id * 3 + 2]);
+      return _vector;
+    }
+    return new BABYLON.Vector3(vertices[id * 3], vertices[id * 3 + 1], vertices[id * 3 + 2]);
+  },
 
-			var nextVertexId, previousVertexId;
-			var nextVertex, previousVertex;
+  _cleanPolygon: function(polygon, navigationMesh) {
 
-			// console.log("nextVertex: ", nextVertex);
+    var newVertexIds = [];
 
-			if (i === 0) {
-				nextVertexId = polygon.vertexIds[1];
-				previousVertexId = polygon.vertexIds[polygon.vertexIds.length - 1];
-			} else if (i === polygon.vertexIds.length - 1) {
-				nextVertexId = polygon.vertexIds[0];
-				previousVertexId = polygon.vertexIds[polygon.vertexIds.length - 2];
-			} else {
-				nextVertexId = polygon.vertexIds[i + 1];
-				previousVertexId = polygon.vertexIds[i - 1];
-			}
+    var vertices = navigationMesh.vertices;
 
-			nextVertex = this.getVectorFrom(vertices, nextVertexId);
-			previousVertex = this.getVectorFrom(vertices, previousVertexId);
+    for (var i = 0; i < polygon.vertexIds.length; i++) {
 
-			var a = nextVertex.clone().sub(vertex);
-			var b = previousVertex.clone().sub(vertex);
+      var vertex = this.getVectorFrom(vertices, polygon.vertexIds[i]);
 
-			var angle = a.angleTo(b);
+      var nextVertexId, previousVertexId;
+      var nextVertex, previousVertex;
 
-			// console.log(angle);
+      // console.log("nextVertex: ", nextVertex);
 
-			if (angle > Math.PI - 0.01 && angle < Math.PI + 0.01) {
-				// Unneccesary vertex
-				// console.log("Unneccesary vertex: ", polygon.vertexIds[i]);
-				// console.log("Angle between "+previousVertexId+", "+polygon.vertexIds[i]+" "+nextVertexId+" was: ", angle);
+      if (i === 0) {
+        nextVertexId = polygon.vertexIds[1];
+        previousVertexId = polygon.vertexIds[polygon.vertexIds.length - 1];
+      } else if (i === polygon.vertexIds.length - 1) {
+        nextVertexId = polygon.vertexIds[0];
+        previousVertexId = polygon.vertexIds[polygon.vertexIds.length - 2];
+      } else {
+        nextVertexId = polygon.vertexIds[i + 1];
+        previousVertexId = polygon.vertexIds[i - 1];
+      }
 
+      nextVertex = this.getVectorFrom(vertices, nextVertexId);
+      previousVertex = this.getVectorFrom(vertices, previousVertexId);
 
-				// Remove the neighbours who had this vertex
-				var goodNeighbours = [];
-				polygon.neighbours.forEach(function (neighbour) {
-					if (!_.includes(neighbour.vertexIds, polygon.vertexIds[i])) {
-						goodNeighbours.push(neighbour);
-					}
-				});
-				polygon.neighbours = goodNeighbours;
+      var a = nextVertex.clone().sub(vertex);
+      var b = previousVertex.clone().sub(vertex);
 
+      var angle = a.angleTo(b);
 
-				// TODO cleanup the list of vertices and rebuild vertexIds for all polygons
-			} else {
-				newVertexIds.push(polygon.vertexIds[i]);
-			}
+      // console.log(angle);
 
-		}
+      if (angle > Math.PI - 0.01 && angle < Math.PI + 0.01) {
+        // Unneccesary vertex
+        // console.log("Unneccesary vertex: ", polygon.vertexIds[i]);
+        // console.log("Angle between "+previousVertexId+", "+polygon.vertexIds[i]+" "+nextVertexId+" was: ", angle);
 
-		// console.log("New vertexIds: ", newVertexIds);
 
-		polygon.vertexIds = newVertexIds;
+        // Remove the neighbours who had this vertex
+        var goodNeighbours = [];
+        polygon.neighbours.forEach(function(neighbour) {
+          if (!_.includes(neighbour.vertexIds, polygon.vertexIds[i])) {
+            goodNeighbours.push(neighbour);
+          }
+        });
+        polygon.neighbours = goodNeighbours;
 
-		this._setPolygonCentroid(polygon, navigationMesh);
 
-	},
+        // TODO cleanup the list of vertices and rebuild vertexIds for all polygons
+      } else {
+        newVertexIds.push(polygon.vertexIds[i]);
+      }
 
-	_isConvex: function (polygon, navigationMesh) {
+    }
 
-		var vertices = navigationMesh.vertices;
+    // console.log("New vertexIds: ", newVertexIds);
 
-		if (polygon.vertexIds.length < 3) return false;
+    polygon.vertexIds = newVertexIds;
 
-		var convex = true;
+    this._setPolygonCentroid(polygon, navigationMesh);
 
-		var total = 0;
+  },
 
-		var results = [];
+  _isConvex: function(polygon, navigationMesh) {
 
-		for (var i = 0; i < polygon.vertexIds.length; i++) {
+    var vertices = navigationMesh.vertices;
 
-			var vertex = this.getVectorFrom(vertices, polygon.vertexIds[i]);
+    if (polygon.vertexIds.length < 3) return false;
 
-			var nextVertex, previousVertex;
+    var convex = true;
 
-			// console.log("nextVertex: ", nextVertex);
+    var total = 0;
 
-			if (i === 0) {
-				nextVertex = this.getVectorFrom(vertices, polygon.vertexIds[1]);
-				previousVertex = this.getVectorFrom(vertices, polygon.vertexIds[polygon.vertexIds.length - 1]);
-			} else if (i === polygon.vertexIds.length - 1) {
-				nextVertex = this.getVectorFrom(vertices, polygon.vertexIds[0]);
-				previousVertex = this.getVectorFrom(vertices, polygon.vertexIds[polygon.vertexIds.length - 2]);
-			} else {
-				nextVertex = this.getVectorFrom(vertices, polygon.vertexIds[i + 1]);
-				previousVertex = this.getVectorFrom(vertices, polygon.vertexIds[i - 1]);
-			}
+    var results = [];
 
-			var a = nextVertex.clone().sub(vertex);
-			var b = previousVertex.clone().sub(vertex);
+    for (var i = 0; i < polygon.vertexIds.length; i++) {
 
-			var angle = a.angleTo(b);
-			total += angle;
+      var vertex = this.getVectorFrom(vertices, polygon.vertexIds[i]);
 
-			// console.log(angle);
-			if (angle === Math.PI || angle === 0) return false;
+      var nextVertex, previousVertex;
 
-			var r = BABYLON.Vector3.Cross(a, b).y;
-			results.push(r);
-			// console.log("pushed: ", r);
-		}
+      // console.log("nextVertex: ", nextVertex);
 
-		// if ( total > (polygon.vertexIds.length-2)*Math.PI ) return false;
+      if (i === 0) {
+        nextVertex = this.getVectorFrom(vertices, polygon.vertexIds[1]);
+        previousVertex = this.getVectorFrom(vertices, polygon.vertexIds[polygon.vertexIds.length - 1]);
+      } else if (i === polygon.vertexIds.length - 1) {
+        nextVertex = this.getVectorFrom(vertices, polygon.vertexIds[0]);
+        previousVertex = this.getVectorFrom(vertices, polygon.vertexIds[polygon.vertexIds.length - 2]);
+      } else {
+        nextVertex = this.getVectorFrom(vertices, polygon.vertexIds[i + 1]);
+        previousVertex = this.getVectorFrom(vertices, polygon.vertexIds[i - 1]);
+      }
 
-		results.forEach(function (r) {
-			if (r === 0) convex = false;
-		});
+      var a = nextVertex.clone().sub(vertex);
+      var b = previousVertex.clone().sub(vertex);
 
-		if (results[0] > 0) {
-			results.forEach(function (r) {
-				if (r < 0) convex = false;
-			});
-		} else {
-			results.forEach(function (r) {
-				if (r > 0) convex = false;
-			});
-		}
+      var angle = a.angleTo(b);
+      total += angle;
 
-		// console.log("allowed: "+total+", max: "+(polygon.vertexIds.length-2)*Math.PI);
-		// if ( total > (polygon.vertexIds.length-2)*Math.PI ) convex = false;
+      // console.log(angle);
+      if (angle === Math.PI || angle === 0) return false;
 
-		// console.log("Convex: "+(convex ? "true": "false"));
+      var r = BABYLON.Vector3.Cross(a, b).y;
+      results.push(r);
+      // console.log("pushed: ", r);
+    }
 
+    // if ( total > (polygon.vertexIds.length-2)*Math.PI ) return false;
 
+    results.forEach(function(r) {
+      if (r === 0) convex = false;
+    });
 
-		return convex;
-	},
+    if (results[0] > 0) {
+      results.forEach(function(r) {
+        if (r < 0) convex = false;
+      });
+    } else {
+      results.forEach(function(r) {
+        if (r > 0) convex = false;
+      });
+    }
 
-	_buildPolygonGroups: function (navigationMesh) {
+    // console.log("allowed: "+total+", max: "+(polygon.vertexIds.length-2)*Math.PI);
+    // if ( total > (polygon.vertexIds.length-2)*Math.PI ) convex = false;
 
-		var polygons = navigationMesh.polygons;
-		var vertices = navigationMesh.vertices;
+    // console.log("Convex: "+(convex ? "true": "false"));
 
-		var polygonGroups = [];
-		var groupCount = 0;
 
-		var spreadGroupId = function (polygon) {
-			_.each(polygon.neighbours, function (neighbour) {
-				if (_.isUndefined(neighbour.group)) {
-					neighbour.group = polygon.group;
-					spreadGroupId(neighbour);
-				}
-			});
-		};
 
-		_.each(polygons, function (polygon, i) {
+    return convex;
+  },
 
-			if (_.isUndefined(polygon.group)) {
-				polygon.group = groupCount++;
-				// Spread it
-				spreadGroupId(polygon);
-			}
+  _buildPolygonGroups: function(navigationMesh) {
 
-			if (!polygonGroups[polygon.group]) polygonGroups[polygon.group] = [];
+    var polygons = navigationMesh.polygons;
 
-			polygonGroups[polygon.group].push(polygon);
-		});
+    var polygonGroups = [];
+    var groupCount = 0;
 
-		console.log("Groups built: ", polygonGroups.length);
+    var spreadGroupId = function(polygon) {
+      _.each(polygon.neighbours, function(neighbour) {
+        if (_.isUndefined(neighbour.group)) {
+          neighbour.group = polygon.group;
+          spreadGroupId(neighbour);
+        }
+      });
+    };
 
-		return polygonGroups;
-	},
+    _.each(polygons, function(polygon) {
 
-	_array_intersect: function() {
-		var i, all, shortest, nShortest, n, len, ret = [],
-			obj = {},
-			nOthers;
-		nOthers = arguments.length - 1;
-		nShortest = arguments[0].length;
-		shortest = 0;
-		for (i = 0; i <= nOthers; i++) {
-			n = arguments[i].length;
-			if (n < nShortest) {
-				shortest = i;
-				nShortest = n;
-			}
-		}
+      if (_.isUndefined(polygon.group)) {
+        polygon.group = groupCount++;
+        // Spread it
+        spreadGroupId(polygon);
+      }
 
-		for (i = 0; i <= nOthers; i++) {
-			n = (i === shortest) ? 0 : (i || shortest); //Read the shortest array first. Read the first array instead of the shortest
-			len = arguments[n].length;
-			for (var j = 0; j < len; j++) {
-				var elem = arguments[n][j];
-				if (obj[elem] === i - 1) {
-					if (i === nOthers) {
-						ret.push(elem);
-						obj[elem] = 0;
-					} else {
-						obj[elem] = i;
-					}
-				} else if (i === 0) {
-					obj[elem] = 0;
-				}
-			}
-		}
-		return ret;
-	},
+      if (!polygonGroups[polygon.group]) polygonGroups[polygon.group] = [];
 
-	_buildPolygonNeighbours: function (polygon, navigationMesh) {
-		polygon.neighbours = [];
+      polygonGroups[polygon.group].push(polygon);
+    });
 
-		// All other nodes that contain at least two of our vertices are our neighbours
-		for (var i = 0, len = navigationMesh.polygons.length; i < len; i++) {
-			if (polygon === navigationMesh.polygons[i]) continue;
+    console.log("Groups built: ", polygonGroups.length);
 
-			// Don't check polygons that are too far, since the intersection tests take a long time
-			if (BABYLON.Vector3.DistanceSquared(polygon.centroid, navigationMesh.polygons[i].centroid) > 100 * 100) continue;
+    return polygonGroups;
+  },
 
-			var matches = this._array_intersect(polygon.vertexIds, navigationMesh.polygons[i].vertexIds);
-			// var matches = _.intersection(polygon.vertexIds, navigationMesh.polygons[i].vertexIds);
+  _array_intersect: function() {
+    var i, shortest, nShortest, n, len, ret = [],
+      obj = {},
+      nOthers;
+    nOthers = arguments.length - 1;
+    nShortest = arguments[0].length;
+    shortest = 0;
+    for (i = 0; i <= nOthers; i++) {
+      n = arguments[i].length;
+      if (n < nShortest) {
+        shortest = i;
+        nShortest = n;
+      }
+    }
 
-			if (matches.length >= 2) {
-				polygon.neighbours.push(navigationMesh.polygons[i]);
-			}
-		}
-	},
+    for (i = 0; i <= nOthers; i++) {
+      n = (i === shortest) ? 0 : (i || shortest); //Read the shortest array first. Read the first array instead of the shortest
+      len = arguments[n].length;
+      for (var j = 0; j < len; j++) {
+        var elem = arguments[n][j];
+        if (obj[elem] === i - 1) {
+          if (i === nOthers) {
+            ret.push(elem);
+            obj[elem] = 0;
+          } else {
+            obj[elem] = i;
+          }
+        } else if (i === 0) {
+          obj[elem] = 0;
+        }
+      }
+    }
+    return ret;
+  },
 
-	_buildPolygonsFromGeometry: function (geometry) {
+  _buildPolygonNeighbours: function(polygon, navigationMesh) {
+    polygon.neighbours = [];
 
-		var polygons = [];
-		var vertices = geometry.getVerticesData(BABYLON.VertexBuffer.PositionKind);
-		var indices = geometry.getIndices();
-		var polygonId = 1;
+    // All other nodes that contain at least two of our vertices are our neighbours
+    for (var i = 0, len = navigationMesh.polygons.length; i < len; i++) {
+      if (polygon === navigationMesh.polygons[i]) continue;
 
-		console.log("Vertices:", vertices.length/3, "polygons:", indices.length/3);
+      // Don't check polygons that are too far, since the intersection tests take a long time
+      if (BABYLON.Vector3.DistanceSquared(polygon.centroid, navigationMesh.polygons[i].centroid) > 100 * 100) continue;
 
-		// Convert the faces into a custom format that supports more than 3 vertices
-		for (var i = 0; i < indices.length; i+=3) {
+      var matches = this._array_intersect(polygon.vertexIds, navigationMesh.polygons[i].vertexIds);
+      // var matches = _.intersection(polygon.vertexIds, navigationMesh.polygons[i].vertexIds);
 
-			var a = this.getVectorFrom(vertices, indices[i]);
-			var b = this.getVectorFrom(vertices, indices[i+1]);
-			var c = this.getVectorFrom(vertices, indices[i+2]);
-			var normal = BABYLON.Vector3.Cross(b.subtract(a), b.subtract(c)).normalize();
+      if (matches.length >= 2) {
+        polygon.neighbours.push(navigationMesh.polygons[i]);
+      }
+    }
+  },
 
-			polygons.push({
-				id: polygonId++,
-				vertexIds: [indices[i], indices[i+1], indices[i+2]],
-				centroid: geometry.centroids[i/3],
-				normal: normal,
-				neighbours: []
-			});
-		}
+  _buildPolygonsFromGeometry: function(geometry) {
 
-		var navigationMesh = {
-			polygons: polygons,
-			vertices: vertices
-		};
+    var polygons = [];
+    var vertices = geometry.getVerticesData(BABYLON.VertexBuffer.PositionKind);
+    var indices = geometry.getIndices();
+    var polygonId = 1;
 
-		// Build a list of adjacent polygons
-		_.each(polygons, function (polygon) {
-			this._buildPolygonNeighbours(polygon, navigationMesh);
-		}.bind(this));
+    console.log("Vertices:", vertices.length / 3, "polygons:", indices.length / 3);
 
-		return navigationMesh;
-	},
+    // Convert the faces into a custom format that supports more than 3 vertices
+    for (var i = 0; i < indices.length; i += 3) {
 
-	_cleanNavigationMesh: function (navigationMesh) {
+      var a = this.getVectorFrom(vertices, indices[i]);
+      var b = this.getVectorFrom(vertices, indices[i + 1]);
+      var c = this.getVectorFrom(vertices, indices[i + 2]);
+      var normal = BABYLON.Vector3.Cross(b.subtract(a), b.subtract(c)).normalize();
 
-		var polygons = navigationMesh.polygons;
-		var vertices = navigationMesh.vertices;
+      polygons.push({
+        id: polygonId++,
+        vertexIds: [indices[i], indices[i + 1], indices[i + 2]],
+        centroid: geometry.centroids[i / 3],
+        normal: normal,
+        neighbours: []
+      });
+    }
 
+    var navigationMesh = {
+      polygons: polygons,
+      vertices: vertices
+    };
 
-		// Remove steep triangles
-		var up = new BABYLON.Vector3(0, 1, 0);
-		polygons = _.filter(polygons, function (polygon) {
-			var angle = Math.acos(up.dot(polygon.normal));
-			return angle < (Math.PI / 4);
-		});
+    // Build a list of adjacent polygons
+    _.each(polygons, function(polygon) {
+      this._buildPolygonNeighbours(polygon, navigationMesh);
+    }.bind(this));
 
+    return navigationMesh;
+  },
 
-		// Remove unnecessary edges using the Hertel-Mehlhorn algorithm
+  _cleanNavigationMesh: function(navigationMesh) {
 
-		// 1. Find a pair of adjacent nodes (i.e., two nodes that share an edge between them)
-		//    whose normals are nearly identical (i.e., their surfaces face the same direction).
+    var polygons = navigationMesh.polygons;
+    var vertices = navigationMesh.vertices;
 
 
-		var newPolygons = [];
+    // Remove steep triangles
+    var up = new BABYLON.Vector3(0, 1, 0);
+    polygons = _.filter(polygons, function(polygon) {
+      var angle = Math.acos(BABYLON.Vector3.Dot(up, polygon.normal));
+      return angle < (Math.PI / 4);
+    });
 
-		_.each(polygons, function (polygon) {
 
-			if (polygon.toBeDeleted) return;
+    // Remove unnecessary edges using the Hertel-Mehlhorn algorithm
 
-			var keepLooking = true;
+    // 1. Find a pair of adjacent nodes (i.e., two nodes that share an edge between them)
+    //    whose normals are nearly identical (i.e., their surfaces face the same direction).
 
-			while (keepLooking) {
-				keepLooking = false;
 
-				_.each(polygon.neighbours, function (otherPolygon) {
+    var newPolygons = [];
 
-					if (polygon === otherPolygon) return;
+    _.each(polygons, function(polygon) {
 
-					if (Math.acos(polygon.normal.dot(otherPolygon.normal)) < 0.01) {
-						// That's pretty equal alright!
+      if (polygon.toBeDeleted) return;
 
-						// Merge otherPolygon with polygon
+      var keepLooking = true;
 
-						var testVertexIdList = [];
+      while (keepLooking) {
+        keepLooking = false;
 
-						var testPolygon = {
-							vertexIds: mergeVertexIds(polygon.vertexIds, otherPolygon.vertexIds),
-							neighbours: polygon.neighbours,
-							normal: polygon.normal.clone(),
-							centroid: polygon.centroid.clone()
-						};
+        _.each(polygon.neighbours, function(otherPolygon) {
 
-						this._cleanPolygon(testPolygon, navigationMesh);
+          if (polygon === otherPolygon) return;
 
-						if (isConvex(testPolygon, navigationMesh)) {
-							otherPolygon.toBeDeleted = true;
+          if (Math.acos(BABYLON.Vector3.Dot(polygon.normal, otherPolygon.normal)) < 0.01) {
+            // That's pretty equal alright!
 
+            // Merge otherPolygon with polygon
 
-							// Inherit the neighbours from the to be merged polygon, except ourself
-							_.each(otherPolygon.neighbours, function (otherPolygonNeighbour) {
+            var testPolygon = {
+              vertexIds: this._mergeVertexIds(polygon.vertexIds, otherPolygon.vertexIds),
+              neighbours: polygon.neighbours,
+              normal: polygon.normal.clone(),
+              centroid: polygon.centroid.clone()
+            };
 
-								// Set this poly to be merged to be no longer our neighbour
-								otherPolygonNeighbour.neighbours = _.without(otherPolygonNeighbour.neighbours, otherPolygon);
+            this._cleanPolygon(testPolygon, navigationMesh);
 
-								if (otherPolygonNeighbour !== polygon) {
-									// Tell the old Polygon's neighbours about the new neighbour who has merged
-									otherPolygonNeighbour.neighbours.push(polygon);
-								} else {
-									// For ourself, we don't need to know about ourselves
-									// But we inherit the old neighbours
-									polygon.neighbours = polygon.neighbours.concat(otherPolygon.neighbours);
-									polygon.neighbours = _.uniq(polygon.neighbours);
+            if (this._isConvex(testPolygon, navigationMesh)) {
+              otherPolygon.toBeDeleted = true;
 
-									// Without ourselves in it!
-									polygon.neighbours = _.without(polygon.neighbours, polygon);
-								}
-							});
 
-							polygon.vertexIds = mergeVertexIds(polygon.vertexIds, otherPolygon.vertexIds);
+              // Inherit the neighbours from the to be merged polygon, except ourself
+              _.each(otherPolygon.neighbours, function(otherPolygonNeighbour) {
 
-							// console.log(polygon.vertexIds);
-							// console.log("Merge!");
+                // Set this poly to be merged to be no longer our neighbour
+                otherPolygonNeighbour.neighbours = _.without(otherPolygonNeighbour.neighbours, otherPolygon);
 
-							cleanPolygon(polygon, navigationMesh);
+                if (otherPolygonNeighbour !== polygon) {
+                  // Tell the old Polygon's neighbours about the new neighbour who has merged
+                  otherPolygonNeighbour.neighbours.push(polygon);
+                } else {
+                  // For ourself, we don't need to know about ourselves
+                  // But we inherit the old neighbours
+                  polygon.neighbours = polygon.neighbours.concat(otherPolygon.neighbours);
+                  polygon.neighbours = _.uniq(polygon.neighbours);
 
-							keepLooking = true;
-						}
+                  // Without ourselves in it!
+                  polygon.neighbours = _.without(polygon.neighbours, polygon);
+                }
+              });
 
-					}
-				}.bind(this));
-			}
+              polygon.vertexIds = this._mergeVertexIds(polygon.vertexIds, otherPolygon.vertexIds);
 
+              this._cleanPolygon(polygon, navigationMesh);
 
-			if (!polygon.toBeDeleted) {
-				newPolygons.push(polygon);
-			}
+              keepLooking = true;
+            }
 
-		});
+          }
+        }.bind(this));
+      }
 
-		var isUsed = function (vId) {
-			var contains = false;
-			_.each(newPolygons, function (p) {
-				if (!contains && _.includes(p.vertexIds, vId)) {
-					contains = true;
-				}
-			});
-			return contains;
-		};
 
-		// Clean vertices
-		var keepChecking = false;
-		for (var i = 0; i < vertices.length; i++) {
-			if (!isUsed(i)) {
+      if (!polygon.toBeDeleted) {
+        newPolygons.push(polygon);
+      }
 
-				// Decrement all vertices that are higher than i
-				_.each(newPolygons, function (p) {
-					for (var j = 0; j < p.vertexIds.length; j++) {
-						if (p.vertexIds[j] > i) {
-							p.vertexIds[j] --;
-						}
-					}
-				});
+    });
 
-				vertices.splice(i, 1);
-				i--;
-			}
+    var isUsed = function(vId) {
+      var contains = false;
+      _.each(newPolygons, function(p) {
+        if (!contains && _.includes(p.vertexIds, vId)) {
+          contains = true;
+        }
+      });
+      return contains;
+    };
 
-		};
+    // Clean vertices
+    for (var i = 0; i < vertices.length; i++) {
+      if (!isUsed(i)) {
 
+        // Decrement all vertices that are higher than i
+        _.each(newPolygons, function(p) {
+          for (var j = 0; j < p.vertexIds.length; j++) {
+            if (p.vertexIds[j] > i) {
+              p.vertexIds[j]--;
+            }
+          }
+        });
 
-		navigationMesh.polygons = newPolygons;
-		navigationMesh.vertices = vertices;
+        vertices.splice(i, 1);
+        i--;
+      }
 
-	},
+    }
 
-	_buildNavigationMesh: function (geometry) {
-		// Prepare geometry
-		this._computeCentroids(geometry);
+    navigationMesh.polygons = newPolygons;
+    navigationMesh.vertices = vertices;
 
-		this._mergeVertices(geometry);
-		// BABYLON.GeometryUtils.triangulateQuads(geometry);
+  },
 
-		// console.log("vertices:", geometry.vertices.length, "polygons:", geometry.faces.length);
+  _buildNavigationMesh: function(geometry) {
+    // Prepare geometry
+    this._computeCentroids(geometry);
 
-		var navigationMesh = this._buildPolygonsFromGeometry(geometry);
+    this._mergeVertices(geometry);
+    // BABYLON.GeometryUtils.triangulateQuads(geometry);
 
-		// cleanNavigationMesh(navigationMesh);
-		// console.log("Pre-clean:", navigationMesh.polygons.length, "polygons,", navigationMesh.vertices.length, "vertices.");
+    // console.log("vertices:", geometry.vertices.length, "polygons:", geometry.faces.length);
 
-		// console.log("")
-		// console.log("Vertices:", navigationMesh.vertices.length, "polygons,", navigationMesh.polygons.length, "vertices.");
+    var navigationMesh = this._buildPolygonsFromGeometry(geometry);
 
-		return navigationMesh;
-	},
+    // cleanNavigationMesh(navigationMesh);
+    // console.log("Pre-clean:", navigationMesh.polygons.length, "polygons,", navigationMesh.vertices.length, "vertices.");
 
-	_mergeVertices: function (geometry) {
-		var verticesMap = {}; // Hashmap for looking up vertices by position coordinates (and making sure they are unique)
-		var unique = [], changes = [];
+    // console.log("")
+    // console.log("Vertices:", navigationMesh.vertices.length, "polygons,", navigationMesh.polygons.length, "vertices.");
 
-		var v, key;
-		var precisionPoints = 4; // number of decimal points, e.g. 4 for epsilon of 0.0001
-		var precision = Math.pow( 10, precisionPoints );
-		var i, il, face;
-		var indices, j, jl;
-		var ind = geometry.getIndices(), 
-			vert = geometry.getVerticesData(BABYLON.VertexBuffer.PositionKind);
+    return navigationMesh;
+  },
 
-		for ( i = 0, il = vert.length; i < il; i += 3 ) {
+  _mergeVertices: function(geometry) {
+    var verticesMap = {}; // Hashmap for looking up vertices by position coordinates (and making sure they are unique)
+    var unique = [],
+      changes = [];
 
-			v = new BABYLON.Vector3(vert[ i ], vert[ i +1], vert[ i +2]);
-			key = Math.round( v.x * precision ) + '_' + Math.round( v.y * precision ) + '_' + Math.round( v.z * precision );
+    var v, key;
+    var precisionPoints = 4; // number of decimal points, e.g. 4 for epsilon of 0.0001
+    var precision = Math.pow(10, precisionPoints);
+    var indices;
+    var ind = geometry.getIndices(),
+      vert = geometry.getVerticesData(BABYLON.VertexBuffer.PositionKind);
 
-			if ( verticesMap[ key ] === undefined ) {
+    for (var i = 0; i < vert.length; i += 3) {
 
-				verticesMap[ key ] = i/3;
-				unique.push( v.clone() );
-				changes[ i/3 ] = unique.length - 1;
+      v = new BABYLON.Vector3(vert[i], vert[i + 1], vert[i + 2]);
+      key = Math.round(v.x * precision) + '_' + Math.round(v.y * precision) + '_' + Math.round(v.z * precision);
 
-			} else {
+      if (verticesMap[key] === undefined) {
 
-				//console.log('Duplicate vertex found. ', i, ' could be using ', verticesMap[key]);
-				changes[ i/3 ] = changes[ verticesMap[ key ] ];
+        verticesMap[key] = i / 3;
+        unique.push(v.clone());
+        changes[i / 3] = unique.length - 1;
 
-			}
+      } else {
 
-		}
+        //console.log('Duplicate vertex found. ', i, ' could be using ', verticesMap[key]);
+        changes[i / 3] = changes[verticesMap[key]];
 
+      }
 
-		// if faces are completely degenerate after merging vertices, we
-		// have to remove them from the geometry.
-		var faceIndicesToRemove = [];
+    }
 
-		for ( i = 0, il = ind.length; i < il; i += 3 ) {
 
-			ind[i] = changes[ ind[i] ];
-			ind[i+1] = changes[ ind[i+1] ];
-			ind[i+2] = changes[ ind[i+2] ];
+    // if faces are completely degenerate after merging vertices, we
+    // have to remove them from the geometry.
+    var faceIndicesToRemove = [];
 
-			indices = [ ind[i], ind[i+1], ind[i+2] ];
+    for (i = 0; i < ind.length; i += 3) {
 
-			var dupIndex = - 1;
+      ind[i] = changes[ind[i]];
+      ind[i + 1] = changes[ind[i + 1]];
+      ind[i + 2] = changes[ind[i + 2]];
 
-			// if any duplicate vertices are found in a Face3
-			// we have to remove the face as nothing can be saved
-			for ( var n = 0; n < 3; n ++ ) {
+      indices = [ind[i], ind[i + 1], ind[i + 2]];
 
-				if ( indices[ n ] === indices[ ( n + 1 ) % 3 ] ) {
+      var dupIndex = -1;
 
-					dupIndex = n;
-					faceIndicesToRemove.push( i );
-					break;
+      // if any duplicate vertices are found in a Face3
+      // we have to remove the face as nothing can be saved
+      for (var n = 0; n < 3; n++) {
 
-				}
+        if (indices[n] === indices[(n + 1) % 3]) {
 
-			}
+          dupIndex = n;
+          faceIndicesToRemove.push(i);
+          break;
 
-		}
+        }
 
-		for ( i = faceIndicesToRemove.length - 1; i >= 0; i -- ) {
+      }
 
-			var idx = faceIndicesToRemove[ i ];
+    }
 
-			ind.splice( idx, 3 );
+    for (i = faceIndicesToRemove.length - 1; i >= 0; i--) {
 
-		}
+      var idx = faceIndicesToRemove[i];
 
-		// Use unique set of vertices
+      ind.splice(idx, 3);
 
-		var diff = vert.length/3 - unique.length;
-		vert = [];
-		for (var i = 0; i < unique.length; i++) {
-			vert.push(unique[i].x, unique[i].y, unique[i].z);
-		}
+    }
 
-		geometry.setIndices(ind);
-		geometry.setVerticesData(BABYLON.VertexBuffer.PositionKind, vert);
+    // Use unique set of vertices
 
-		return diff;
-	},
+    var diff = vert.length / 3 - unique.length;
+    vert = [];
+    for (i = 0; i < unique.length; i++) {
+      vert.push(unique[i].x, unique[i].y, unique[i].z);
+    }
 
+    geometry.setIndices(ind);
+    geometry.setVerticesData(BABYLON.VertexBuffer.PositionKind, vert);
 
-	_getSharedVerticesInOrder: function (a, b) {
+    return diff;
+  },
 
-		var aList = a.vertexIds;
-		var bList = b.vertexIds;
 
-		var sharedVertices = [];
+  _getSharedVerticesInOrder: function(a, b) {
 
-		_.each(aList, function (vId) {
-			if (_.includes(bList, vId)) {
-				sharedVertices.push(vId);
-			}
-		});
+    var aList = a.vertexIds;
+    var bList = b.vertexIds;
 
-		if (sharedVertices.length < 2) return [];
+    var sharedVertices = [];
 
-		// console.log("TRYING aList:", aList, ", bList:", bList, ", sharedVertices:", sharedVertices);
+    _.each(aList, function(vId) {
+      if (_.includes(bList, vId)) {
+        sharedVertices.push(vId);
+      }
+    });
 
-		if (_.includes(sharedVertices, aList[0]) && _.includes(sharedVertices, aList[aList.length - 1])) {
-			// Vertices on both edges are bad, so shift them once to the left
-			aList.push(aList.shift());
-		}
+    if (sharedVertices.length < 2) return [];
 
-		if (_.includes(sharedVertices, bList[0]) && _.includes(sharedVertices, bList[bList.length - 1])) {
-			// Vertices on both edges are bad, so shift them once to the left
-			bList.push(bList.shift());
-		}
+    // console.log("TRYING aList:", aList, ", bList:", bList, ", sharedVertices:", sharedVertices);
 
-		// Again!
-		sharedVertices = [];
+    if (_.includes(sharedVertices, aList[0]) && _.includes(sharedVertices, aList[aList.length - 1])) {
+      // Vertices on both edges are bad, so shift them once to the left
+      aList.push(aList.shift());
+    }
 
-		_.each(aList, function (vId) {
-			if (_.includes(bList, vId)) {
-				sharedVertices.push(vId);
-			}
-		});
+    if (_.includes(sharedVertices, bList[0]) && _.includes(sharedVertices, bList[bList.length - 1])) {
+      // Vertices on both edges are bad, so shift them once to the left
+      bList.push(bList.shift());
+    }
 
-		return sharedVertices;
-	},
+    // Again!
+    sharedVertices = [];
 
-	_groupNavMesh: function (navigationMesh) {
+    _.each(aList, function(vId) {
+      if (_.includes(bList, vId)) {
+        sharedVertices.push(vId);
+      }
+    });
 
-		var saveObj = {};
+    return sharedVertices;
+  },
 
-		_.each(navigationMesh.vertices, function (v) {
-			v = this._roundNumber(v, 2);
-		}.bind(this));
+  _groupNavMesh: function(navigationMesh) {
 
-		saveObj.vertices = navigationMesh.vertices;
+    var saveObj = {};
 
-		var groups = this._buildPolygonGroups(navigationMesh);
+    _.each(navigationMesh.vertices, function(v) {
+      v = this._roundNumber(v, 2);
+    }.bind(this));
 
-		saveObj.groups = [];
+    saveObj.vertices = navigationMesh.vertices;
 
-		var findPolygonIndex = function (group, p) {
-			for (var i = 0; i < group.length; i++) {
-				if (p === group[i]) return i;
-			}
-		};
+    var groups = this._buildPolygonGroups(navigationMesh);
 
-		_.each(groups, function (group) {
+    saveObj.groups = [];
 
-			var newGroup = [];
+    var findPolygonIndex = function(group, p) {
+      for (var i = 0; i < group.length; i++) {
+        if (p === group[i]) return i;
+      }
+    };
 
-			_.each(group, function (p) {
+    _.each(groups, function(group) {
 
-				var neighbours = [];
+      var newGroup = [];
 
-				_.each(p.neighbours, function (n) {
-					neighbours.push(findPolygonIndex(group, n));
-				});
+      _.each(group, function(p) {
 
+        var neighbours = [];
 
-				// Build a portal list to each neighbour
-				var portals = [];
-				_.each(p.neighbours, function (n) {
-					portals.push(this._getSharedVerticesInOrder(p, n));
-				}.bind(this));
+        _.each(p.neighbours, function(n) {
+          neighbours.push(findPolygonIndex(group, n));
+        });
 
 
-				p.centroid.x = this._roundNumber(p.centroid.x, 2);
-				p.centroid.y = this._roundNumber(p.centroid.y, 2);
-				p.centroid.z = this._roundNumber(p.centroid.z, 2);
+        // Build a portal list to each neighbour
+        var portals = [];
+        _.each(p.neighbours, function(n) {
+          portals.push(this._getSharedVerticesInOrder(p, n));
+        }.bind(this));
 
-				newGroup.push({
-					id: findPolygonIndex(group, p),
-					neighbours: neighbours,
-					vertexIds: p.vertexIds,
-					centroid: p.centroid,
-					portals: portals
-				});
 
-			}.bind(this));
+        p.centroid.x = this._roundNumber(p.centroid.x, 2);
+        p.centroid.y = this._roundNumber(p.centroid.y, 2);
+        p.centroid.z = this._roundNumber(p.centroid.z, 2);
 
-			saveObj.groups.push(newGroup);
-		}.bind(this));
+        newGroup.push({
+          id: findPolygonIndex(group, p),
+          neighbours: neighbours,
+          vertexIds: p.vertexIds,
+          centroid: p.centroid,
+          portals: portals
+        });
 
-		return saveObj;
-	},
+      }.bind(this));
+
+      saveObj.groups.push(newGroup);
+    }.bind(this));
+
+    return saveObj;
+  },
 });
 
 module.exports = Navigation;
