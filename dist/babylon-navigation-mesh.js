@@ -599,6 +599,7 @@ var Navigation = Class.$extend({
       // if (dist > 0.01 * 0.01) {
       vectors.push(vec);
       // }
+
     });
 
     // We don't need the first one, as we already know our start position

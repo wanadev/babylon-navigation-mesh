@@ -1,6 +1,6 @@
 {
   "name": "babylon-navigation-mesh",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "A toolkit to move on navigation mesh with BABYLONJS",
   "scripts": {
     "test": "jshint lib",
@@ -9,18 +9,6 @@
     "build-dist": "rm -rf dist && mkdir dist && browserify -t [ babelify --presets [ es2015 ] ] -s Navigation lib/Navigation.js -o dist/babylon-navigation-mesh.js",
     "build-uglify": "uglifyjs dist/babylon-navigation-mesh.js -o dist/babylon-navigation-mesh.min.js",
     "watchify": "rm -rf dist && mkdir dist && watchify -v -t [ babelify --presets [ es2015 ] ] -s Navigation lib/Navigation.js -o dist/babylon-navigation-mesh.js"
-  },
-  "browserify": {
-    "transform": [
-      [
-        "babelify",
-        {
-          "presets": [
-            "es2015"
-          ]
-        }
-      ]
-    ]
   },
   "repository": {
     "type": "git",
