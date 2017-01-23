@@ -107,6 +107,14 @@ var Navigation = Class.$extend({
     return finalProj;
   },
 
+  _projectPointOnPlane: function _projectPointOnPlane(point, plane) {
+    var proj = point.clone();
+    var coef = BABYLON.Vector3.Dot(point, plane.normal) + plane.d;
+    proj.subtractInPlace(plane.normal.scale(coef));
+
+    return proj;
+  },
+
   _getProjectionOnNode: function _getProjectionOnNode(position, node, vertices) {
 
     var A = this.getVectorFrom(vertices, node.vertexIds[0]);
@@ -120,7 +128,7 @@ var Navigation = Class.$extend({
       normal: n,
       d: -BABYLON.Vector3.Dot(A, n)
     };
-    var p = position.projectOnPlane(plane);
+    var p = this._projectPointOnPlane(position, plane);
     // Compute barycentric coordinates (u, v, w) for
     // point p with respect to triangle (a, b, c)
     var barycentric = function barycentric(p, a, b, c) {
