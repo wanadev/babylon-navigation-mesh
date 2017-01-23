@@ -108,9 +108,8 @@ var Navigation = Class.$extend({
   },
 
   _projectPointOnPlane: function _projectPointOnPlane(point, plane) {
-    var proj = point.clone();
     var coef = BABYLON.Vector3.Dot(point, plane.normal) + plane.d;
-    proj.subtractInPlace(plane.normal.scale(coef));
+    var proj = point.subtract(plane.normal.scale(coef));
 
     return proj;
   },
