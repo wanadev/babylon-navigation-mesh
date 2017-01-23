@@ -17,10 +17,8 @@ Add the npm package [babylon-navigation-mesh](https://www.npmjs.com/package/baby
 or clone:
 
     git clone git@github.com:wanadev/babylon-navigation-mesh.git
-    cd babylon-navigation-mesh
-    npm install grunt-cli
-    npm install
-    grunt
+    npm install 
+    npm run build
 
 then 
 

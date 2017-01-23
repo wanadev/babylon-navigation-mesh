@@ -25,7 +25,7 @@ var loadScene = function() {
         navigation.setZoneData('level', zoneNodes);
     };
 
-    BABYLON.SceneLoader.Append("./mesh/", "level.babylon", scene, onLoaded.bind(this));
+    BABYLON.SceneLoader.Append("./demo/mesh/", "level.babylon", scene, onLoaded.bind(this));
 };
 
 // Set the basics

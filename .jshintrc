@@ -1,0 +1,20 @@
+{
+  "futurehostile": true,
+  "freeze": true,
+  "latedef": false,
+  "noarg": true,
+  "nocomma": true,
+  "nonbsp": true,
+  "nonew": true,
+  "undef": true,
+  "browser": true,
+  "browserify": true,
+  "mocha": true,
+  "shadow": false,
+  "esnext": true,
+  "loopfunc": true,
+  "newcap": false,
+  "globals": {
+      "console": false
+  }
+}

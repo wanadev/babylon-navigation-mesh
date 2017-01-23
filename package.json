@@ -1,9 +1,26 @@
 {
   "name": "babylon-navigation-mesh",
-  "version": "1.1.4",
+  "version": "1.2.0",
   "description": "A toolkit to move on navigation mesh with BABYLONJS",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jshint lib",
+    "build": "npm run build-es5 && npm run build-dist && npm run build-uglify",
+    "build-es5": "cd lib/ && babel *.js -d ../lib-es5",
+    "build-dist": "rm -rf dist && mkdir dist && browserify -t [ babelify --presets [ es2015 ] ] -s Navigation lib/Navigation.js -o dist/babylon-navigation-mesh.js",
+    "build-uglify": "uglifyjs dist/babylon-navigation-mesh.js -o dist/babylon-navigation-mesh.min.js",
+    "watchify": "rm -rf dist && mkdir dist && watchify -v -t [ babelify --presets [ es2015 ] ] -s Navigation lib/Navigation.js -o dist/babylon-navigation-mesh.js"
+  },
+  "browserify": {
+    "transform": [
+      [
+        "babelify",
+        {
+          "presets": [
+            "es2015"
+          ]
+        }
+      ]
+    ]
   },
   "repository": {
     "type": "git",
@@ -24,14 +41,16 @@
     }
   ],
   "license": "MIT",
-  "main": "./src/Navigation.js",
+  "main": "./lib/Navigation.js",
   "devDependencies": {
-    "grunt": "^0.4.5",
-    "grunt-browserify": "^4.0.0",
-    "grunt-cli": "^1.2.0",
-    "grunt-contrib-clean": "^1.0.0",
-    "grunt-contrib-uglify": "^0.11.1",
-    "grunt-contrib-watch": "^0.6.1"
+    "babel": "^6.5.2",
+    "babel-cli": "^6.9.0",
+    "babel-preset-es2015": "^6.18.0",
+    "babelify": "^7.3.0",
+    "browserify": "^13.0.1",
+    "jshint": "^2.9.2",
+    "uglify-js": "^2.6.2",
+    "watchify": "^3.7.0"
   },
   "dependencies": {
     "abitbol": "^1.0.3",
