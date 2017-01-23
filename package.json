@@ -1,6 +1,6 @@
 {
   "name": "babylon-navigation-mesh",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "A toolkit to move on navigation mesh with BABYLONJS",
   "scripts": {
     "test": "jshint lib",
@@ -41,7 +41,7 @@
     }
   ],
   "license": "MIT",
-  "main": "./lib/Navigation.js",
+  "main": "./lib-es5/Navigation.js",
   "devDependencies": {
     "babel": "^6.5.2",
     "babel-cli": "^6.9.0",
