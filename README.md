@@ -1,5 +1,7 @@
 # Babylon-navigation-mesh
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/wanadev/babylon-navigation-mesh.svg)](https://greenkeeper.io/)
+
 [![NPM version](https://badge.fury.io/js/babylon-navigation-mesh.png)](http://badge.fury.io/js/babylon-navigation-mesh)
 
 [Demo](http://wanadev.github.io/babylon-navigation-mesh/)
