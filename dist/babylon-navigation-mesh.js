@@ -2,6 +2,7 @@
 "use strict";
 
 var Class = require("abitbol");
+var BABYLON = require("babylonjs");
 var BinaryHeap = require("./BinaryHeap.js");
 
 var Astar = Class.$extend({
@@ -125,7 +126,7 @@ var Astar = Class.$extend({
 
 module.exports = Astar;
 
-},{"./BinaryHeap.js":2,"abitbol":5}],2:[function(require,module,exports){
+},{"./BinaryHeap.js":2,"abitbol":5,"babylonjs":7}],2:[function(require,module,exports){
 "use strict";
 
 var Class = require("abitbol");
@@ -256,6 +257,7 @@ module.exports = BinaryHeap;
 "use strict";
 
 var Class = require("abitbol");
+var BABYLON = require("babylonjs");
 
 var Channel = Class.$extend({
 	__init__: function __init__() {
@@ -361,7 +363,7 @@ var Channel = Class.$extend({
 
 module.exports = Channel;
 
-},{"abitbol":5}],4:[function(require,module,exports){
+},{"abitbol":5,"babylonjs":7}],4:[function(require,module,exports){
 "use strict";
 
 var Class = require("abitbol");
@@ -1432,13 +1434,29 @@ Object.defineProperty(Class, "$extend", {
         var computedPropertyName;
         var annotations;
         var i;
+        var mixin;
 
         // Copy properties from mixins
         if (properties.__include__) {
             for (i = properties.__include__.length - 1 ; i >= 0 ; i--) {
-                for (property in properties.__include__[i]) {
-                    if (properties[property] === undefined) {
-                        properties[property] = properties.__include__[i][property];
+                mixin = properties.__include__[i];
+                for (property in mixin) {
+                    if (property == "__classvars__") {
+                        continue;
+                    } else if (properties[property] === undefined) {
+                        properties[property] = mixin[property];
+                    }
+                }
+
+                // Merging mixin's static properties
+                if (mixin.__classvars__) {
+                    if (!properties.__classvars__) {
+                        properties.__classvars__ = {};
+                    }
+                    for (property in mixin.__classvars__) {
+                        if (properties.__classvars__[property] === undefined) {
+                            properties.__classvars__[property] = mixin.__classvars__[property];
+                        }
                     }
                 }
             }

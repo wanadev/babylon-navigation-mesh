@@ -1,6 +1,7 @@
 "use strict";
 
 var Class = require("abitbol");
+var BABYLON = require("babylonjs");
 
 var Channel = Class.$extend({
 	__init__: function __init__() {
