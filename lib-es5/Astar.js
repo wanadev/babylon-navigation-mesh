@@ -1,6 +1,7 @@
 "use strict";
 
 var Class = require("abitbol");
+var BABYLON = require("babylonjs");
 var BinaryHeap = require("./BinaryHeap.js");
 
 var Astar = Class.$extend({
