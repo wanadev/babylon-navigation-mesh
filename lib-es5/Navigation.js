@@ -18,6 +18,7 @@ var Navigation = Class.$extend({
   __init__: function __init__() {
     this.zoneNodes = {};
     this.astar = new Astar();
+    this.yTolerance = 1;
   },
 
   buildNodes: function buildNodes(mesh) {
@@ -30,6 +31,10 @@ var Navigation = Class.$extend({
 
   setZoneData: function setZoneData(zone, data) {
     this.zoneNodes[zone] = data;
+  },
+
+  setHeightTolerance: function setHeightTolerance(tolerance) {
+    this.yTolerance = tolerance;
   },
 
   getGroup: function getGroup(zone, position) {
@@ -171,34 +176,36 @@ var Navigation = Class.$extend({
     var allNodes = this.zoneNodes[zone].groups[group];
     var vertices = this.zoneNodes[zone].vertices;
 
-    var closestNode = null;
-    var distance = Infinity;
+    var startingNode = null;
 
-    allNodes.forEach(function (node) {
-      var measuredDistance = BABYLON.Vector3.DistanceSquared(node.centroid, startPosition);
-      if (measuredDistance < distance) {
-        closestNode = node;
-        distance = measuredDistance;
+    for (var i = 0; i < allNodes.length; i++) {
+      if (this._isVectorInPolygon(startPosition, allNodes[i], vertices)) {
+        startingNode = allNodes[i];
+        break;
       }
-    });
+    }
 
-    var farthestNode = null;
-    distance = Infinity;
+    var endNode = null;
 
-    allNodes.forEach(function (node) {
-      var measuredDistance = BABYLON.Vector3.DistanceSquared(node.centroid, targetPosition);
-      if (measuredDistance < distance && this._isVectorInPolygon(targetPosition, node, vertices)) {
-        farthestNode = node;
-        distance = measuredDistance;
+    for (var i = 0; i < allNodes.length; i++) {
+      if (this._isVectorInPolygon(targetPosition, allNodes[i], vertices)) {
+        endNode = allNodes[i];
+        break;
       }
-    }.bind(this));
-
-    // If we can't find any node, just go straight to the target
-    if (!closestNode || !farthestNode) {
+    }
+    // If we can't find any node, theres no path to target
+    if (!startingNode || !endNode) {
       return null;
     }
 
-    var paths = this.astar.search(allNodes, closestNode, farthestNode);
+    if (startingNode.id != endNode.id) {
+      // if the starting node and target node are at the same polygon skip searching and funneling as there is no obstacle.
+      var paths = this.astar.search(allNodes, startingNode, endNode);
+    } else {
+      vectors = [];
+      vectors.push(new BABYLON.Vector3(targetPosition.x, targetPosition.y, targetPosition.z));
+      return vectors;
+    }
 
     var getPortalFromTo = function getPortalFromTo(a, b) {
       for (var i = 0; i < a.neighbours.length; i++) {
@@ -273,7 +280,7 @@ var Navigation = Class.$extend({
       polygonVertices.push(point);
     }.bind(this));
 
-    if (vector.y < highestPoint + 0.5 && vector.y > lowestPoint - 0.5 && this._isPointInPoly(polygonVertices, vector)) {
+    if (vector.y < highestPoint + this.yTolerance && vector.y > lowestPoint - this.yTolerance && this._isPointInPoly(polygonVertices, vector)) {
       return true;
     }
     return false;
