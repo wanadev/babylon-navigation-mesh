@@ -65,10 +65,11 @@ canvas.addEventListener('click', function(event) {
             value: minimoi.position
         }];
         for (var i = 0; i < path.length; i++) {
-            length += BABYLON.Vector3.Distance(direction[i].value, path[i]);
+            var vector = new BABYLON.Vector3(path[i].x, path[i].y, path[i].z);
+            length += BABYLON.Vector3.Distance(direction[i].value, vector);
             direction.push({
                 frame: length*100,
-                value: path[i]
+                value: vector
             });
         }
 
